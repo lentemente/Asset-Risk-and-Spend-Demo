@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk-Based Investment — Network Asset Demonstrator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E9EDF2;--surface:#FFFFFF;--surface-2:#F5F7FB;--ink:#13202E;--muted:#5B6A7C;
+    --faint:#8A98A8;--line:#D8DFE8;--line-strong:#C3CCD8;--accent:#2A3BD4;--accent-press:#1F2DA8;
+    --good:#2F7D5B;--hot:#BE4B3B;
+    --band-low:#A9C7B5;--band-med:#E6B25C;--band-high:#BE4B3B;--r:10px;
+    --font-display:'Space Grotesk',system-ui,-apple-system,sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --shadow:0 1px 2px rgba(19,32,46,.04),0 8px 24px rgba(19,32,46,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:0 0 64px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  header.site{padding:48px 0 28px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:500;margin:0 0 14px}
+  h1.title{font-family:var(--font-display);font-weight:600;letter-spacing:-.02em;font-size:clamp(28px,4.6vw,46px);line-height:1.04;margin:0 0 14px;max-width:18ch}
+  .thesis{font-size:clamp(15px,1.9vw,18px);color:var(--muted);max-width:62ch;margin:0}
+  .thesis b{color:var(--ink);font-weight:600}
+  .disclaimer{margin-top:18px;font-family:var(--font-mono);font-size:11.5px;color:var(--faint);display:inline-flex;align-items:center;gap:8px}
+  .disclaimer::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--faint)}
+  nav.tabs{display:flex;gap:4px;margin:28px 0 0;flex-wrap:wrap}
+  .tab{font-family:var(--font-body);font-size:14px;font-weight:500;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:999px;padding:9px 18px;cursor:pointer;transition:background .15s,color .15s}
+  .tab:hover{color:var(--ink);background:var(--surface-2)}
+  .tab[aria-selected="true"]{background:var(--ink);color:#fff}
+  .tab-num{font-family:var(--font-mono);font-size:11px;opacity:.55;margin-right:7px}
+  .view{padding-top:30px}
+  .view[hidden]{display:none}
+  .lead{color:var(--muted);max-width:66ch;margin:0 0 26px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+  .headline{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:24px}
+  .head-stat{background:var(--surface);padding:20px 22px}
+  .head-stat .lab{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .flow{display:flex;align-items:baseline;gap:12px;font-family:var(--font-display);font-weight:600}
+  .flow .from{font-size:26px;color:var(--faint);text-decoration:line-through;text-decoration-thickness:1.5px}
+  .flow .arrow{color:var(--accent);font-size:18px}
+  .flow .to{font-size:38px;letter-spacing:-.02em}
+  .flow .unit{font-family:var(--font-mono);font-size:11px;color:var(--muted);font-weight:400;align-self:flex-end;margin-bottom:5px}
+  .delta{margin-top:8px;font-size:13px;color:var(--good);font-weight:500;font-family:var(--font-mono)}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .strat{padding:20px}
+  .strat-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px}
+  .strat-head h3{font-family:var(--font-display);font-weight:600;font-size:17px;margin:0;letter-spacing:-.01em}
+  .strat-head .spend{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+  .strat-sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .strat.opt{outline:1.5px solid var(--accent);outline-offset:-1.5px}
+  .strat.opt .strat-head h3{color:var(--accent)}
+  .strat-stats{display:flex;gap:24px;padding:2px 0 16px;margin-bottom:14px;border-bottom:1px solid var(--line);font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;flex-wrap:wrap}
+  .strat-stats span{display:flex;flex-direction:column;gap:3px}
+  .strat-stats b{font-family:var(--font-display);font-weight:600;font-size:19px;color:var(--ink);letter-spacing:-.01em}
+  .mtitle{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 10px}
+  .mtitle:first-of-type{margin-top:0}
+  .matrix{display:grid;grid-template-columns:auto repeat(5,1fr);gap:3px;align-items:stretch}
+  .m-colhead,.m-rowhead{font-family:var(--font-mono);font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+  .m-rowhead{justify-content:flex-end;padding-right:8px;font-weight:500;color:var(--ink)}
+  .m-colhead{padding-bottom:2px}
+  .cell{min-height:36px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:12.5px;font-weight:500}
+  .cell.corner{box-shadow:inset 0 0 0 2px var(--ink)}
+  .axislabels{display:flex;justify-content:space-between;margin-top:7px;font-family:var(--font-mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+  .axislabels .zone-axis{margin-left:auto}
+  .bandsum{display:flex;gap:16px;margin-top:12px;font-family:var(--font-mono);font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .bandsum span{display:inline-flex;align-items:center;gap:7px}
+  .bandsum i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .bandsum b{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink)}
+  .legend{display:flex;align-items:center;gap:16px;margin-top:18px;font-family:var(--font-mono);font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .lever-grid{display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+  .control{padding:24px}
+  .ctl-lab{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .pct{font-family:var(--font-display);font-weight:600;font-size:46px;letter-spacing:-.02em;line-height:1}
+  .pct small{font-size:22px;color:var(--muted)}
+  .vsbase{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:6px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:var(--line-strong);margin:26px 0 8px;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 1px 4px rgba(19,32,46,.25);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid #fff;box-shadow:0 1px 4px rgba(19,32,46,.25);cursor:pointer}
+  .range-ticks{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--faint)}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:24px}
+  .metric{background:var(--surface);padding:14px 16px}
+  .metric .lab{font-family:var(--font-mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .metric .val{font-family:var(--font-display);font-weight:600;font-size:22px;letter-spacing:-.01em}
+  .metric .val small{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);font-weight:400}
+  .fleet-card{padding:24px}
+  .fleet-card h3{font-family:var(--font-display);font-weight:600;font-size:16px;margin:0 0 4px}
+  .fleet-card .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .fleet-toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .ftog{font-family:var(--font-body);font-size:12px;font-weight:500;border:1px solid var(--line-strong);background:var(--accent);color:#fff;border-radius:999px;padding:6px 13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;display:inline-flex;align-items:center;gap:6px}
+  .ftog::before{content:"";width:6px;height:6px;border-radius:50%;background:#fff}
+  .ftog[aria-pressed="false"]{background:var(--surface-2);color:var(--faint);border-color:var(--line)}
+  .ftog[aria-pressed="false"]::before{background:var(--faint)}
+  .ftog:hover{border-color:var(--accent)}
+  .fleetrow{display:grid;grid-template-columns:175px 1fr auto;gap:14px;align-items:center;margin-bottom:11px}
+  .fleetrow .fname{font-size:12.5px;color:var(--ink)}
+  .bar-track{background:var(--surface-2);border-radius:5px;height:20px;overflow:hidden;border:1px solid var(--line)}
+  .bar-fill{height:100%;background:var(--accent);border-radius:4px 0 0 4px;transition:width .4s ease;min-width:2px}
+  .fleetrow .fval{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:right;min-width:78px}
+  .fslider{margin-bottom:17px}
+  .fslider:last-child{margin-bottom:0}
+  .fs-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .fs-name{font-size:13px;color:var(--ink)}
+  .fs-val{font-family:var(--font-mono);font-size:12px;color:var(--ink);font-weight:500;white-space:nowrap}
+  .fslider input[type=range]{margin:9px 0 0}
+  .matrices-pair{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .target-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+  .tinput{margin-bottom:22px}
+  .tinput label{display:block;font-size:14px;font-weight:500;margin-bottom:3px}
+  .tinput .hint{color:var(--muted);font-size:12.5px;margin-bottom:10px}
+  .num-row{display:flex;align-items:center;gap:12px}
+  .num-row input[type=range]{margin:0;flex:1}
+  .num-row output{font-family:var(--font-mono);font-size:15px;font-weight:600;min-width:46px;text-align:right;color:var(--accent)}
+  .horizon-note{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin:0 0 20px;border-top:1px dashed var(--line);padding-top:16px}
+  .btn{font-family:var(--font-body);font-size:14px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:8px;padding:12px 20px;cursor:pointer;transition:background .15s;width:100%}
+  .btn:hover{background:var(--accent-press)}
+  .btn:disabled{opacity:.6;cursor:default}
+  .result{padding:24px}
+  .placeholder{color:var(--faint);font-size:14px;text-align:center;padding:48px 20px}
+  .infeasible{color:var(--hot);font-size:13.5px;margin-top:14px;line-height:1.45}
+  .res-head{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:26px}
+  .res-head .metric .val{font-size:26px}
+  .chart-block{margin-bottom:26px}
+  .chart-block .ch-title{font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+  .chart-block .ch-x{font-family:var(--font-mono);font-size:10px;color:var(--faint);text-align:center;margin-top:2px}
+  .chart-svg{width:100%;height:auto;display:block}
+  .ax{font-family:var(--font-mono);font-size:10px;fill:var(--faint)}
+  .ch-legend{display:flex;gap:18px;margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--muted);flex-wrap:wrap}
+  .ch-legend span{display:inline-flex;align-items:center;gap:7px}
+  .ch-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+  .ch-legend i.dash{background:none!important;border-top:2px dashed var(--faint);height:0;width:16px}
+  .about{margin-top:48px;padding-top:28px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px;max-width:74ch;line-height:1.6}
+  .about h4{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin:0 0 12px;font-weight:600}
+  .about p{margin:0 0 12px}
+  .about b{color:var(--ink)}
+  @media(max-width:860px){.compare,.matrices-pair,.lever-grid,.target-grid,.headline{grid-template-columns:1fr}.lever-grid,.target-grid{gap:24px}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <p class="eyebrow">Network asset risk &middot; investment demonstrator</p>
+    <h1 class="title">Spend by consequence, not just condition.</h1>
+    <p class="thesis">Replacing the <b>most</b> assets is not the same as removing the <b>riskiest</b> failures. With real unit costs, an end-of-life programme renews a lot of cheap kit; weighting the same budget by the safety and reliability consequence of failure clears the hot corner instead.</p>
+    <span class="disclaimer">Illustrative network of ~62,100 assets. The subject is the method, not a real network.</span>
+    <nav class="tabs" role="tablist" aria-label="Views">
+      <button class="tab" role="tab" aria-selected="true"  data-view="compare"><span class="tab-num">01</span>End-of-life vs risk-based</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="lever"><span class="tab-num">02</span>Move the investment</button>
+      <button class="tab" role="tab" aria-selected="false" data-view="target"><span class="tab-num">03</span>Long-term view</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <section class="view" id="view-compare">
+    <p class="lead">Both approaches spend the same life-based base budget this year. The end-of-life method renews the assets furthest past their expected life. The risk-based method renews the assets whose failure would do the most harm per pound. The matrix cells are banded Low / Medium / High risk; watch the High band and the outlined zone-5 corner.</p>
+    <div class="headline" id="headline"></div>
+    <div class="compare">
+      <div class="card strat" id="strat-current">
+        <div class="strat-head"><h3>End-of-life method</h3><span class="spend" id="spend-current"></span></div>
+        <p class="strat-sub">Weibull base case — renew most life-expired first</p>
+        <div id="mx-current"></div>
+      </div>
+      <div class="card strat opt" id="strat-opt">
+        <div class="strat-head"><h3>Risk-based approach</h3><span class="spend" id="spend-opt"></span></div>
+        <p class="strat-sub">Consequence-weighted — renew highest risk per pound</p>
+        <div id="mx-opt"></div>
+      </div>
+    </div>
+    <div class="legend"><span><i style="background:var(--band-high)"></i>High risk</span><span><i style="background:var(--band-med)"></i>Medium</span><span><i style="background:var(--band-low)"></i>Low</span><span style="color:var(--faint)">Numbers are expected failures / year</span></div>
+  </section>
+  <section class="view" id="view-lever" hidden>
+    <p class="lead">Set the renewal volume for each fleet. Every fleet is bounded by resource commitments &mdash; a committed minimum you will deliver and a deliverability ceiling you cannot exceed. Within each fleet the worst-risk assets go first. Watch the corners, the all-in cost and the delivered volume respond.</p>
+    <div class="lever-grid">
+      <div class="card control">
+        <div class="ctl-lab">Programme this year</div>
+        <div class="metrics" id="prog-metrics"></div>
+        <button class="btn" id="reset-prog" style="margin-top:20px">Reset to sustainable rate</button>
+        <p class="horizon-note" id="commit-note"></p>
+      </div>
+      <div class="card fleet-card">
+        <h3>Renewal volume by fleet</h3>
+        <p class="sub">Assets renewed per year &mdash; drag to invest more or less in each fleet</p>
+        <div id="fleet-sliders"></div>
+      </div>
+    </div>
+    <div class="matrices-pair" style="margin-top:20px">
+      <div class="card strat"><div class="strat-head"><h3>Safety</h3></div><div id="lv-mx-safety"></div></div>
+      <div class="card strat"><div class="strat-head"><h3>Reliability</h3></div><div id="lv-mx-rel"></div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--band-high)"></i>High risk</span><span><i style="background:var(--band-med)"></i>Medium</span><span><i style="background:var(--band-low)"></i>Low</span></div>
+  </section>
+  <section class="view" id="view-target" hidden>
+    <p class="lead">The programme you set in <b>Move the investment</b>, projected 20 years out. Renewal spend holds at the volume you committed; reactive repairs and failures show whether that volume keeps pace with the ageing fleet. Deliver below the replacement rate and a <b>bow wave</b> of deferred renewals builds &mdash; failures and repair spend climb year on year.</p>
+    <div class="card result">
+      <div class="res-head">
+        <div class="metric"><div class="lab">Failures, year 1</div><div class="val" id="lt-fy1"></div></div>
+        <div class="metric"><div class="lab">Failures, year 20</div><div class="val" id="lt-fy20"></div></div>
+        <div class="metric"><div class="lab">20-yr all-in spend</div><div class="val" id="lt-spend"></div></div>
+        <div class="metric"><div class="lab">Bow wave</div><div class="val" id="lt-bow"></div></div>
+      </div>
+      <div class="chart-block">
+        <p class="ch-title">Spend per year &mdash; renewals &amp; reactive repairs</p>
+        <div id="lt-chart-spend"></div>
+        <div class="ch-x">Year</div>
+        <div class="ch-legend"><span><i style="background:var(--accent)"></i>Renewals</span><span><i style="background:var(--band-med)"></i>Reactive repairs</span></div>
+      </div>
+      <div class="chart-block" style="margin-bottom:0">
+        <p class="ch-title">Failures per year</p>
+        <div id="lt-chart-fail"></div>
+        <div class="ch-x">Year</div>
+        <div class="ch-legend"><span><i style="background:var(--ink)"></i>This programme</span><span><i class="dash"></i>Sustainable rate (reference)</span></div>
+      </div>
+    </div>
+  </section>
+  <div class="about">
+    <h4>How it works</h4>
+    <p>An illustrative fleet of about 62,100 assets across seven volumetric types is generated once and held fixed, with a realistic spread of ages: distribution transformers, 11 kV and 33 kV overhead lines and underground cables (per kilometre), support structures, and switchgear. Failure follows a Weibull hazard (shape 3) whose characteristic life is each fleet's expected life, scaled so the year-0 expected failures match a target (about 185 in total). Each asset carries a fixed safety and reliability impact grade and a zone (1&ndash;5); 33 kV assets sit mostly in the higher reliability zones. Matrix cells are grouped into three risk bands by impact and zone, and the figures are expected failures per year.</p>
+    <p>Replacement uses real unit rates: transformers $30k, switchgear $35k, overhead lines $100k/km, cables $1M/km, support structures $10k. The base spend is set from fleet lives &mdash; funding renewal at about three-quarters of the steady-state rate lives imply (~18% of the fleet over ten years). The <b>end-of-life method</b> renews the most life-expired assets first; the <b>risk-based</b> method renews the highest risk-reduction-per-pound first. At the same budget the end-of-life method replaces far more (cheaper) assets, while risk-based concentrates spend where failures do most harm. Renewal volume is bounded by <b>resource commitments</b>: a committed minimum the network will deliver (about half the life-based rate) and a deliverability ceiling it cannot exceed (about three times it), reflecting crews, outages and supply chains. In <b>Move the investment</b> a slider per fleet sets the annual volume within those bounds, and the worst-risk assets in each fleet are renewed first.</p>
+    <p>Every failure also carries a <b>reactive repair cost</b> &mdash; cheap for overhead lines (~$2.5k), modest for support structures (~$8k), and expensive for cables (~$60k), transformers and switchgear (~$30k). The views report this alongside the proactive investment as an all-in cost, which surfaces a real tension: the end-of-life programme trims repair spend by renewing expensive-to-fix kit, while risk-based concentrates on high-consequence overhead that is cheap to repair but dangerous to leave. Conductor volumes are set to 1,800 km of 11 kV and 300 km of 33 kV, each split between overhead and underground.</p>
+    <p>The <b>long-term view</b> projects the chosen per-fleet volumes 20 years forward, ageing the fleet one year at a time and renewing the committed volume of worst-risk assets each year (failed assets are assumed partly replaced in kind). It charts renewal spend, reactive repair spend and failures per year. Because risk-based targeting delivers a low volume of assets, deferring the bulk of the ageing fleet, sustained under-delivery builds a <b>bow wave</b>: failures and repair spend climb year on year, shown against the sustainable replacement rate. The numbers are synthetic; this is a demonstration of the method, not a model of any real network.</p>
+  </div>
+</main>
+<script>
+(function(){
+  "use strict";
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  const rng=mulberry32(20240611);
+  const ZD=[0.15,0.25,0.30,0.20,0.10], Z33=[0.03,0.07,0.15,0.30,0.45];
+  function zw(w){const r=rng();let c=0;for(let i=0;i<5;i++){c+=w[i];if(r<c)return i+1;}return 5;}
+  const IMPACT_W={none:0,low:1,med:4,high:60}, ZONE_W=[0,1,2,4,8,16], CAP=0.95, BETA=3.0;
+  // 3x5 risk-band matrix (rows high,med,low; cols zone 1..5): 0 Low, 1 Medium, 2 High
+  const BAND=[[1,2,2,2,2],[0,0,1,1,2],[0,0,0,1,1]];
+  const BAND_COL=['var(--band-low)','var(--band-med)','var(--band-high)'];
+  const BAND_FG=['#13202E','#13202E','#ffffff'];
+  // target = expected material-impact failures per year at year 0; life = expected life (yrs); cost in $
+  // cost = proactive replacement unit rate; react = expected reactive repair cost per failure
+  const FLEETS=[
+    {key:'tx', name:'Distribution transformers', count:5000, cost:30000,  react:30000,life:50, target:37.50, sImp:'low', rImp:'low', sZ:ZD,rZ:ZD},
+    {key:'ohl11',name:'11 kV overhead lines (km)', count:1350,cost:100000, react:2500, life:60, target:31.34, sImp:'high',rImp:'high',sZ:ZD,rZ:ZD},
+    {key:'ug11',name:'11 kV cables (km)',          count:450, cost:1000000,react:60000,life:80, target:9.37,  sImp:'none',rImp:'high',sZ:ZD,rZ:ZD},
+    {key:'ohl33',name:'33 kV overhead lines (km)', count:210, cost:100000, react:2500, life:60, target:4.88,  sImp:'high',rImp:'high',sZ:ZD,rZ:Z33},
+    {key:'ug33',name:'33 kV cables (km)',          count:90,  cost:1000000,react:60000,life:80, target:1.88,  sImp:'none',rImp:'high',sZ:ZD,rZ:Z33},
+    {key:'sup',name:'Support structures',          count:50000,cost:10000, react:8000, life:50, target:75.00, sImp:'med', rImp:'med', sZ:ZD,rZ:ZD},
+    {key:'sw', name:'Switchgear & reclosers',      count:5000,cost:35000,  react:30000,life:40, target:25.00, sImp:'med', rImp:'med', sZ:ZD,rZ:ZD}
+  ];
+  const fleetByKey={};FLEETS.forEach(f=>fleetByKey[f.key]=f);
+  function haz(t,eta){return 1-Math.exp(Math.pow(t/eta,BETA)-Math.pow((t+1)/eta,BETA));}  // annual conditional failure prob
+
+  const assets=[];
+  FLEETS.forEach(f=>{
+    for(let i=0;i<f.count;i++){
+      const age=Math.round(f.life*(0.1+1.15*Math.pow(rng(),0.9)));
+      assets.push({fleet:f.key,eta:f.life,life:f.life,cost:f.cost,react:f.react,age0:age,age:age,mult:0.75+0.5*rng(),
+        sImp:f.sImp,rImp:f.rImp,sZ:zw(f.sZ),rZ:zw(f.rZ),conseq:0,renPof:0,cal:0});
+    }
+  });
+  const N=assets.length;
+  // calibrate each fleet so year-0 expected failures match its target
+  const shape={};FLEETS.forEach(f=>shape[f.key]=0);
+  for(const a of assets)shape[a.fleet]+=haz(a.age0,a.eta)*a.mult;
+  for(const a of assets)a.cal=fleetByKey[a.fleet].target/shape[a.fleet];
+  for(const a of assets){a.conseq=IMPACT_W[a.sImp]*ZONE_W[a.sZ]+IMPACT_W[a.rImp]*ZONE_W[a.rZ];a.renPof=Math.min(CAP,a.cal*haz(0,a.eta)*a.mult);}
+  const TOTAL_COST=assets.reduce((s,a)=>s+a.cost,0);
+
+  const P=new Float64Array(N);
+  function refreshP(){for(let i=0;i<N;i++){const a=assets[i];P[i]=Math.min(CAP,a.cal*haz(a.age,a.eta)*a.mult);}}
+  function reset(){for(let i=0;i<N;i++)assets[i].age=assets[i].age0;refreshP();}
+
+  function orderBy(mode){
+    const key=new Float64Array(N);
+    for(let i=0;i<N;i++){const a=assets[i];key[i]=mode==='base'?(a.age/a.life):P[i]*a.conseq/a.cost;}
+    const idx=Array.from({length:N},(_,i)=>i);
+    idx.sort((x,y)=>key[y]-key[x]);
+    return idx;
+  }
+  // Deliverability cap: no fleet can be renewed faster than DELIVERABILITY x its
+  // natural (life-based) replacement rate per year — crews, outages, supply chains.
+  const DELIVERABILITY=3;
+  const MAXCNT={};FLEETS.forEach(f=>MAXCNT[f.key]=Math.max(1,Math.ceil(DELIVERABILITY*f.count/f.life)));
+  function applyPrefix(ord,budget,allowed){
+    let sp=0,cnt=0;const perFleet={},used={};FLEETS.forEach(f=>{perFleet[f.key]=0;used[f.key]=0;});
+    for(let k=0;k<N;k++){const a=assets[ord[k]];
+      if(allowed&&!allowed.has(a.fleet))continue;
+      if(used[a.fleet]>=MAXCNT[a.fleet])continue;
+      if(sp+a.cost>budget)continue;
+      sp+=a.cost;cnt++;used[a.fleet]++;a.age=0;perFleet[a.fleet]+=a.cost;}
+    refreshP();return{spent:sp,perFleet:perFleet,count:cnt};
+  }
+  function allocate(budget,mode,allowed){return applyPrefix(orderBy(mode),budget,allowed);}
+  reset();const BASE_FAILURES=total();
+  const LIFE_RENEW=FLEETS.reduce((s,f)=>s+f.count/f.life,0);
+  const LIFE_BUDGET=FLEETS.reduce((s,f)=>s+(f.count/f.life)*f.cost,0);
+  const FUND_RATIO=0.75;
+  const BASELINE=Math.round(FUND_RATIO*LIFE_BUDGET);
+
+  const ri={high:0,med:1,low:2};
+  function matrix(dim){
+    const g=[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]];
+    for(let i=0;i<N;i++){const a=assets[i];const imp=dim==='s'?a.sImp:a.rImp;if(imp==='none')continue;
+      const z=dim==='s'?a.sZ:a.rZ;g[ri[imp]][z-1]+=P[i];}
+    return g;
+  }
+  function highRow(dim){let s=0;for(let i=0;i<N;i++){if((dim==='s'?assets[i].sImp:assets[i].rImp)==='high')s+=P[i];}return s;}
+  function corner(dim){let s=0;for(let i=0;i<N;i++){const a=assets[i],imp=dim==='s'?a.sImp:a.rImp,z=dim==='s'?a.sZ:a.rZ;if(imp==='high'&&z===5)s+=P[i];}return s;}
+  function total(){let s=0;for(let i=0;i<N;i++)s+=P[i];return s;}
+  function reactiveSpend(){let s=0;for(let i=0;i<N;i++)s+=P[i]*assets[i].react;return s;}
+  function bandTotalsFromGrid(g){const t=[0,0,0];for(let r=0;r<3;r++)for(let c=0;c<5;c++)t[BAND[r][c]]+=g[r][c];return t;}
+
+  const ROW_LAB=['High','Medium','Low'];
+  const cellFmt=v=>v>=100?Math.round(v).toString():v.toFixed(1);
+  const f1=n=>n.toFixed(1);
+  const fmt=n=>Math.round(n).toLocaleString('en-GB');
+  const money=x=>'$'+(x/1e6).toFixed(1)+'M';
+  function renderMatrix(host,grid){
+    let h='<div class="matrix"><div></div>';
+    for(let z=1;z<=5;z++) h+='<div class="m-colhead">'+z+'</div>';
+    for(let r=0;r<3;r++){
+      h+='<div class="m-rowhead">'+ROW_LAB[r]+'</div>';
+      for(let c=0;c<5;c++){const v=grid[r][c],band=BAND[r][c],cn=(r===0&&c===4)?' corner':'';
+        h+='<div class="cell'+cn+'" style="background:'+BAND_COL[band]+';color:'+BAND_FG[band]+'" title="'+ROW_LAB[r]+' impact, zone '+(c+1)+' &mdash; '+['Low','Medium','High'][band]+' risk: '+v.toFixed(1)+' failures/yr">'+cellFmt(v)+'</div>';}
+    }
+    h+='</div><div class="axislabels"><span>Impact &uarr;</span><span class="zone-axis">Zone &rarr;</span></div>';
+    const t=bandTotalsFromGrid(grid);
+    h+='<div class="bandsum"><span><i style="background:var(--band-high)"></i>High <b>'+f1(t[2])+'</b>/yr</span><span><i style="background:var(--band-med)"></i>Med <b>'+f1(t[1])+'</b>/yr</span><span><i style="background:var(--band-low)"></i>Low <b>'+f1(t[0])+'</b>/yr</span></div>';
+    host.innerHTML=h;
+  }
+
+  function lineChart(rows,series){
+    const W=640,H=210,pl=46,pr=12,pt=14,pb=26;let ymax=0;
+    series.forEach(s=>rows.forEach(r=>{if(r[s.key]>ymax)ymax=r[s.key];}));
+    ymax=Math.max(10,Math.ceil(ymax/50)*50);
+    const X=i=>pl+(W-pl-pr)*(rows.length<2?0:i/(rows.length-1));
+    const Y=v=>pt+(H-pt-pb)*(1-v/ymax);
+    let g='';
+    [0,ymax/2,ymax].forEach(gv=>{const y=Y(gv);g+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#D8DFE8"/><text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end" class="ax">'+fmt(gv)+'</text>';});
+    const xstep=Math.ceil(rows.length/8);
+    rows.forEach((r,i)=>{if(i%xstep!==0&&i!==rows.length-1)return;g+='<text x="'+X(i)+'" y="'+(H-8)+'" text-anchor="middle" class="ax">'+r.year+'</text>';});
+    series.forEach(s=>{let d='';rows.forEach((r,i)=>{d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(r[s.key]).toFixed(1);});
+      g+='<path d="'+d+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round"'+(s.dash?' stroke-dasharray="5 4"':'')+'/>';
+      if(!s.dash)rows.forEach((r,i)=>{g+='<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(r[s.key]).toFixed(1)+'" r="2.6" fill="'+s.color+'"/>';});});
+    return '<svg viewBox="0 0 '+W+' '+H+'" class="chart-svg">'+g+'</svg>';
+  }
+  function barChart(rows,key,color){
+    const W=640,H=160,pl=56,pr=12,pt=12,pb=26;let ymax=0;rows.forEach(r=>{if(r[key]>ymax)ymax=r[key];});ymax=Math.max(1,ymax);
+    const n=rows.length,slot=(W-pl-pr)/n,bw=slot*0.6,Y=v=>pt+(H-pt-pb)*(1-v/ymax);
+    let g='';
+    [0,ymax].forEach(gv=>{const y=Y(gv);g+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#D8DFE8"/><text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end" class="ax">'+money(gv)+'</text>';});
+    rows.forEach((r,i)=>{const x=pl+slot*i+(slot-bw)/2,y=Y(r[key]),hgt=(H-pt-pb)-(y-pt);
+      g+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,hgt).toFixed(1)+'" rx="2" fill="'+color+'"/><text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" class="ax">'+r.year+'</text>';});
+    return '<svg viewBox="0 0 '+W+' '+H+'" class="chart-svg">'+g+'</svg>';
+  }
+  function stackChart(rows,segs){
+    const W=640,H=160,pl=56,pr=12,pt=12,pb=26;let ymax=0;rows.forEach(r=>{let s=0;segs.forEach(g=>s+=r[g.key]);if(s>ymax)ymax=s;});ymax=Math.max(1,ymax);
+    const n=rows.length,slot=(W-pl-pr)/n,bw=slot*0.6,Y=v=>pt+(H-pt-pb)*(1-v/ymax);
+    let g='';
+    [0,ymax].forEach(gv=>{const y=Y(gv);g+='<line x1="'+pl+'" y1="'+y+'" x2="'+(W-pr)+'" y2="'+y+'" stroke="#D8DFE8"/><text x="'+(pl-6)+'" y="'+(y+3)+'" text-anchor="end" class="ax">'+money(gv)+'</text>';});
+    rows.forEach((r,i)=>{const x=pl+slot*i+(slot-bw)/2;let base=0;
+      segs.forEach(s=>{const y0=Y(base),y1=Y(base+r[s.key]);g+='<rect x="'+x.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,(y0-y1)).toFixed(1)+'" rx="1.5" fill="'+s.color+'"/>';base+=r[s.key];});
+      if(i%Math.ceil(rows.length/8)===0||i===rows.length-1)g+='<text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" class="ax">'+r.year+'</text>';});
+    return '<svg viewBox="0 0 '+W+' '+H+'" class="chart-svg">'+g+'</svg>';
+  }
+  function renderFleetBars(host,perFleet){
+    const max=Math.max(1,...Object.values(perFleet));let h='';
+    FLEETS.forEach(f=>{const v=perFleet[f.key];h+='<div class="fleetrow"><div class="fname">'+f.name+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(v/max*100)+'%"></div></div><div class="fval">'+money(v)+'</div></div>';});
+    host.innerHTML=h;
+  }
+
+  function renderCompare(){
+    reset();const cRes=allocate(BASELINE,'base');
+    const cSaf=matrix('s'),cRel=matrix('r'),cSafHigh=corner('s'),cRelHigh=corner('r'),cTot=total(),cN=cRes.count,cSp=cRes.spent,cRx=reactiveSpend();
+    reset();const oRes=allocate(BASELINE,'risk');
+    const oSaf=matrix('s'),oRel=matrix('r'),oSafHigh=corner('s'),oRelHigh=corner('r'),oTot=total(),oN=oRes.count,oSp=oRes.spent,oRx=reactiveSpend();
+    document.getElementById('spend-current').textContent=money(cSp+cRx)+' all-in / yr';
+    document.getElementById('spend-opt').textContent=money(oSp+oRx)+' all-in / yr';
+    function stat(lab,from,to){const cut=Math.max(0,(1-to/from)*100);
+      return '<div class="head-stat"><div class="lab">'+lab+'</div><div class="flow"><span class="from">'+f1(from)+'</span><span class="arrow">&rarr;</span><span class="to">'+f1(to)+'</span><span class="unit">/yr</span></div><div class="delta">&minus;'+cut.toFixed(0)+'% in the hot corner, same spend</div></div>';}
+    document.getElementById('headline').innerHTML=stat('High-impact safety failures &middot; zone 5',cSafHigh,oSafHigh)+stat('High-impact reliability failures &middot; zone 5',cRelHigh,oRelHigh);
+    const statline=(tot,n,sp,rx)=>'<div class="strat-stats"><span><b>'+money(sp)+'</b>investment / yr</span><span><b>'+money(rx)+'</b>reactive / yr</span><span><b>'+fmt(n)+'</b>replacements / yr</span><span><b>'+f1(tot)+'</b>failures / yr</span></div>';
+    const cur=document.getElementById('mx-current');
+    cur.innerHTML=statline(cTot,cN,cSp,cRx)+'<div class="mtitle">Safety</div><div id="c-saf"></div><div class="mtitle">Reliability</div><div id="c-rel"></div>';
+    renderMatrix(document.getElementById('c-saf'),cSaf);renderMatrix(document.getElementById('c-rel'),cRel);
+    const opt=document.getElementById('mx-opt');
+    opt.innerHTML=statline(oTot,oN,oSp,oRx)+'<div class="mtitle">Safety</div><div id="o-saf"></div><div class="mtitle">Reliability</div><div id="o-rel"></div>';
+    renderMatrix(document.getElementById('o-saf'),oSaf);renderMatrix(document.getElementById('o-rel'),oRel);
+  }
+
+  // ---- per-fleet programme: volumes bounded by resource commitments ----
+  const idxByFleet={};FLEETS.forEach(f=>idxByFleet[f.key]=[]);
+  assets.forEach((a,i)=>idxByFleet[a.fleet].push(i));
+  reset();
+  const idxSorted0={};FLEETS.forEach(f=>{idxSorted0[f.key]=idxByFleet[f.key].slice().sort((x,y)=>(P[y]*assets[y].conseq)-(P[x]*assets[x].conseq));});
+  const COMMITMENT=0.5; // committed minimum as a fraction of the life-based rate
+  const lifeRate={},minVol={},maxVol={},level={};
+  FLEETS.forEach(f=>{const lr=f.count/f.life;lifeRate[f.key]=Math.round(lr);minVol[f.key]=Math.max(0,Math.round(COMMITMENT*lr));maxVol[f.key]=Math.ceil(DELIVERABILITY*lr);level[f.key]=Math.round(lr);});
+  const TOTAL_MIN=FLEETS.reduce((s,f)=>s+minVol[f.key],0),TOTAL_MAX=FLEETS.reduce((s,f)=>s+maxVol[f.key],0);
+
+  function applyPolicy(lv){ // snapshot on the year-0 fleet
+    reset();let spend=0,vol=0;const spendByFleet={},volByFleet={};
+    FLEETS.forEach(f=>{const ix=idxSorted0[f.key],L=Math.min(lv[f.key],ix.length);for(let j=0;j<L;j++)assets[ix[j]].age=0;volByFleet[f.key]=L;spendByFleet[f.key]=L*f.cost;spend+=L*f.cost;vol+=L;});
+    refreshP();
+    return {spend,vol,spendByFleet,volByFleet,reactive:reactiveSpend(),failures:total(),cornerS:corner('s'),cornerR:corner('r')};
+  }
+  const CHURN=0.4;
+  function projectPolicy(lv,years){
+    reset();const rows=[],key=new Float64Array(N);
+    for(let y=1;y<=years;y++){
+      for(let i=0;i<N;i++)assets[i].age+=1;refreshP();
+      for(let i=0;i<N;i++)key[i]=P[i]*assets[i].conseq;
+      let renew=0;
+      FLEETS.forEach(f=>{const ix=idxByFleet[f.key].slice().sort((x,y)=>key[y]-key[x]),L=Math.min(lv[f.key],ix.length);for(let j=0;j<L;j++)assets[ix[j]].age=0;renew+=L*f.cost;});
+      refreshP();
+      rows.push({year:y,renew:renew,react:reactiveSpend(),fail:total()});
+      for(let i=0;i<N;i++)assets[i].age=assets[i].age*(1-CHURN*P[i]);
+    }
+    return rows;
+  }
+
+  // ---- view 2: programme ----
+  let progPending=false;
+  function renderFleetSliders(){
+    const host=document.getElementById('fleet-sliders');
+    host.innerHTML=FLEETS.map(f=>'<div class="fslider"><div class="fs-top"><span class="fs-name">'+f.name+'</span><span class="fs-val" id="fsv-'+f.key+'"></span></div><input type="range" id="fs-'+f.key+'" min="'+minVol[f.key]+'" max="'+maxVol[f.key]+'" step="1" value="'+level[f.key]+'" aria-label="'+f.name+' renewals per year"></div>').join('');
+    FLEETS.forEach(f=>document.getElementById('fs-'+f.key).addEventListener('input',e=>{level[f.key]=+e.target.value;progThrottled();}));
+  }
+  function renderProgramme(){
+    const r=applyPolicy(level);
+    FLEETS.forEach(f=>{document.getElementById('fsv-'+f.key).innerHTML=fmt(r.volByFleet[f.key])+' /yr <span style="color:var(--faint)">&middot; '+money(r.spendByFleet[f.key])+'</span>';});
+    const cells=[
+      ['Assets renewed / yr',fmt(r.vol)],
+      ['Share of fleet / 10 yr',(r.vol*10/N*100).toFixed(0)+'%'],
+      ['Investment / yr',money(r.spend)],
+      ['Reactive repairs / yr',money(r.reactive)],
+      ['All-in cost / yr',money(r.spend+r.reactive)],
+      ['Total failures / yr',f1(r.failures)],
+      ['High-impact safety, z5',f1(r.cornerS)],
+      ['High-impact reliability, z5',f1(r.cornerR)]
+    ];
+    document.getElementById('prog-metrics').innerHTML=cells.map(c=>'<div class="metric"><div class="lab">'+c[0]+'</div><div class="val">'+c[1]+'</div></div>').join('');
+    renderMatrix(document.getElementById('lv-mx-safety'),matrix('s'));
+    renderMatrix(document.getElementById('lv-mx-rel'),matrix('r'));
+  }
+  function progThrottled(){if(progPending)return;progPending=true;requestAnimationFrame(()=>{progPending=false;renderProgramme();});}
+  function resetProgramme(){FLEETS.forEach(f=>{level[f.key]=lifeRate[f.key];document.getElementById('fs-'+f.key).value=lifeRate[f.key];});renderProgramme();}
+
+  // ---- view 3: long-term ----
+  let sustCache=null;
+  function renderLongterm(){
+    const YEARS=20;
+    const rows=projectPolicy(level,YEARS);
+    if(!sustCache)sustCache=projectPolicy(lifeRate,YEARS);
+    const merged=rows.map((r,i)=>({year:r.year,fail:r.fail,sust:sustCache[i].fail}));
+    const allin=rows.reduce((s,r)=>s+r.renew+r.react,0);
+    const f1y=rows[0].fail,f20=rows[YEARS-1].fail,rise=(f20/f1y-1)*100;
+    const vol=FLEETS.reduce((s,f)=>s+level[f.key],0);
+    document.getElementById('lt-fy1').textContent=f1(f1y);
+    document.getElementById('lt-fy20').textContent=f1(f20);
+    document.getElementById('lt-spend').innerHTML=money(allin)+' <small>all-in</small>';
+    document.getElementById('lt-bow').innerHTML=(vol>=LIFE_RENEW-1)?'<span style="color:var(--good)">Sustainable</span>':'<span style="color:var(--hot)">&plus;'+rise.toFixed(0)+'% by yr 20</span>';
+    document.getElementById('lt-chart-spend').innerHTML=stackChart(rows,[{key:'renew',color:'#2A3BD4'},{key:'react',color:'#E6B25C'}]);
+    document.getElementById('lt-chart-fail').innerHTML=lineChart(merged,[{key:'sust',color:'#8A98A8',dash:true},{key:'fail',color:'#13202E'}]);
+  }
+
+  // ---- tabs & init ----
+  const views={compare:document.getElementById('view-compare'),lever:document.getElementById('view-lever'),target:document.getElementById('view-target')};
+  document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected','false'));
+    t.setAttribute('aria-selected','true');
+    Object.values(views).forEach(v=>v.hidden=true);
+    const v=t.dataset.view;views[v].hidden=false;
+    if(v==='target'){document.getElementById('lt-chart-fail').innerHTML='<p class="placeholder">Projecting 20 years\u2026</p>';document.getElementById('lt-chart-spend').innerHTML='';setTimeout(renderLongterm,20);}
+  }));
+  document.getElementById('reset-prog').addEventListener('click',resetProgramme);
+  document.getElementById('commit-note').innerHTML='Bounded by resource commitments: the network delivers between '+fmt(TOTAL_MIN)+' and '+fmt(TOTAL_MAX)+' assets a year. The sustainable replacement rate is \u2248 '+fmt(Math.round(LIFE_RENEW))+' / yr.';
+
+  renderCompare();
+  renderFleetSliders();
+  renderProgramme();
+})();
+</script>
+</body>
+</html>
